@@ -71,3 +71,12 @@ class TestExtra {
         c.find(q);
     }
 }
+
+// Test 2 - SSRF pattern
+class TestSsrf {
+    public void fetch(HttpServletRequest req) throws Exception {
+        String url = req.getParameter("url");
+        java.net.URL u = new java.net.URL(url);
+        u.openStream();
+    }
+}
