@@ -1,0 +1,55 @@
+name: Label PRs with Semgrep findings
+
+on:
+  issue_comment:
+    types: [created]
+
+permissions:
+  pull-requests: write
+  issues: write
+
+env:
+  # Label applied to the PR when Semgrep comments. Rename here to customize.
+  LABEL_NAME: semgrep-findings
+  # Comma-separated list of bot logins that count as "Semgrep".
+  # Semgrep's GitHub App posts as "semgrep-app[bot]". Older/self-hosted
+  # setups may use "semgrep-bot" or "semgrep-cloud". Add any others here.
+  SEMGREP_BOT_LOGINS: "semgrep-app[bot],semgrep-bot,semgrep-cloud"
+
+jobs:
+  label:
+    # Only run on PR comments (issue_comment fires for both issues and PRs).
+    if: github.event.issue.pull_request != null
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check comment author and add label
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          COMMENT_AUTHOR: ${{ github.event.comment.user.login }}
+          PR_NUMBER: ${{ github.event.issue.number }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+
+          # Match comment author against configured Semgrep bot logins.
+          match=0
+          IFS=',' read -ra BOTS <<< "$SEMGREP_BOT_LOGINS"
+          for bot in "${BOTS[@]}"; do
+            bot_trimmed="$(echo "$bot" | xargs)"
+            if [ "$COMMENT_AUTHOR" = "$bot_trimmed" ]; then
+              match=1
+              break
+            fi
+          done
+
+          if [ "$match" -eq 0 ]; then
+            echo "Comment by '$COMMENT_AUTHOR' is not from a Semgrep bot. Skipping."
+            exit 0
+          fi
+
+          echo "Semgrep comment detected from '$COMMENT_AUTHOR'. Adding label '$LABEL_NAME' to PR #$PR_NUMBER."
+          gh api \
+            --method POST \
+            -H "Accept: application/vnd.github+json" \
+            "/repos/$REPO/issues/$PR_NUMBER/labels" \
+            -f "labels[]=$LABEL_NAME"
