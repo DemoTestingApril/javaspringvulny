@@ -58,3 +58,16 @@ class Test {
         DBCursor cursor = coll.find(query);
     }
 }
+
+// Additional NoSQL injection sample for fresh finding
+class TestExtra {
+    protected void doExtra(HttpServletRequest req, HttpServletResponse resp) {
+        String input = req.getParameter("q");
+        MongoClient client = new MongoClient();
+        DB db = client.getDB("d");
+        DBCollection c = db.getCollection("c");
+        // ruleid: nosql-injection-servlets
+        BasicDBObject q = new BasicDBObject("$where", "this.f == \"" + input + "\"");
+        c.find(q);
+    }
+}
