@@ -80,3 +80,17 @@ class TestSsrf {
         u.openStream();
     }
 }
+
+// Test 2b - guaranteed NoSQL injection via $where
+class TestNoSql2 {
+    protected void doMore(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+        String input = req.getParameter("q");
+        MongoClient client = new MongoClient();
+        DB db = client.getDB("d2");
+        DBCollection c = db.getCollection("c2");
+        BasicDBObject q = new BasicDBObject();
+        // ruleid: nosql-injection-servlets
+        q.put("$where", "this.x == \"" + input + "\"");
+        c.find(q);
+    }
+}
