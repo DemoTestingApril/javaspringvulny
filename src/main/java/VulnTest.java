@@ -1,4 +1,3 @@
-package test;
 import java.sql.*;
 public class VulnTest {
     public void run(Connection c, String userInput) throws Exception {
