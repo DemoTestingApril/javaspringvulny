@@ -1,7 +1,14 @@
 name: Label PRs with Semgrep findings
 
 on:
+  # Top-level PR comments.
   issue_comment:
+    types: [created]
+  # PR review submissions (Semgrep posts findings as a review).
+  pull_request_review:
+    types: [submitted]
+  # Inline review comments on a diff.
+  pull_request_review_comment:
     types: [created]
 
 permissions:
@@ -19,27 +26,52 @@ env:
 
 jobs:
   label:
-    # Only run on PR comments (issue_comment fires for both issues and PRs).
-    if: github.event.issue.pull_request != null
+    # For issue_comment, only run on PR comments (not regular issues).
+    # The other two events fire only on PRs by definition.
+    if: github.event_name != 'issue_comment' || github.event.issue.pull_request != null
     runs-on: ubuntu-latest
     steps:
-      - name: Check comment author and add label
+      - name: Check author and add label
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          COMMENT_AUTHOR: ${{ github.event.comment.user.login }}
-          PR_NUMBER: ${{ github.event.issue.number }}
           REPO: ${{ github.repository }}
+          EVENT_NAME: ${{ github.event_name }}
+          ISSUE_COMMENT_AUTHOR: ${{ github.event.comment.user.login }}
+          ISSUE_COMMENT_PR: ${{ github.event.issue.number }}
+          REVIEW_AUTHOR: ${{ github.event.review.user.login }}
+          REVIEW_COMMENT_AUTHOR: ${{ github.event.comment.user.login }}
+          PR_NUMBER_FROM_PR: ${{ github.event.pull_request.number }}
         run: |
           set -euo pipefail
 
-          # Case-insensitive glob match against comment author login.
+          # Pick author + PR number based on which event fired.
+          case "$EVENT_NAME" in
+            issue_comment)
+              AUTHOR="$ISSUE_COMMENT_AUTHOR"
+              PR_NUMBER="$ISSUE_COMMENT_PR"
+              ;;
+            pull_request_review)
+              AUTHOR="$REVIEW_AUTHOR"
+              PR_NUMBER="$PR_NUMBER_FROM_PR"
+              ;;
+            pull_request_review_comment)
+              AUTHOR="$REVIEW_COMMENT_AUTHOR"
+              PR_NUMBER="$PR_NUMBER_FROM_PR"
+              ;;
+            *)
+              echo "Unhandled event: $EVENT_NAME"
+              exit 0
+              ;;
+          esac
+
+          # Case-insensitive glob match against author login.
           shopt -s nocasematch
-          if [[ "$COMMENT_AUTHOR" != $SEMGREP_BOT_PATTERN ]]; then
-            echo "Comment by '$COMMENT_AUTHOR' does not match pattern '$SEMGREP_BOT_PATTERN'. Skipping."
+          if [[ "$AUTHOR" != $SEMGREP_BOT_PATTERN ]]; then
+            echo "Author '$AUTHOR' does not match pattern '$SEMGREP_BOT_PATTERN'. Skipping."
             exit 0
           fi
 
-          echo "Semgrep comment detected from '$COMMENT_AUTHOR'. Adding label '$LABEL_NAME' to PR #$PR_NUMBER."
+          echo "Semgrep activity detected from '$AUTHOR' on PR #$PR_NUMBER (event: $EVENT_NAME). Adding label '$LABEL_NAME'."
           gh api \
             --method POST \
             -H "Accept: application/vnd.github+json" \
