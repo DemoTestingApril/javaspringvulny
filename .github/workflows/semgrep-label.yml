@@ -11,10 +11,11 @@ permissions:
 env:
   # Label applied to the PR when Semgrep comments. Rename here to customize.
   LABEL_NAME: semgrep-findings
-  # Comma-separated list of bot logins that count as "Semgrep".
-  # Semgrep's GitHub App posts as "semgrep-app[bot]". Older/self-hosted
-  # setups may use "semgrep-bot" or "semgrep-cloud". Add any others here.
-  SEMGREP_BOT_LOGINS: "semgrep-app[bot],semgrep-bot,semgrep-cloud"
+  # Glob pattern matched against the comment author's login (case-insensitive).
+  # Default catches all Semgrep GitHub App accounts, including per-deployment
+  # bots like "semgrep-code1-acme[bot]" and the legacy "semgrep-app[bot]".
+  # Override with an exact login or any shell glob if needed.
+  SEMGREP_BOT_PATTERN: "semgrep*"
 
 jobs:
   label:
@@ -31,19 +32,10 @@ jobs:
         run: |
           set -euo pipefail
 
-          # Match comment author against configured Semgrep bot logins.
-          match=0
-          IFS=',' read -ra BOTS <<< "$SEMGREP_BOT_LOGINS"
-          for bot in "${BOTS[@]}"; do
-            bot_trimmed="$(echo "$bot" | xargs)"
-            if [ "$COMMENT_AUTHOR" = "$bot_trimmed" ]; then
-              match=1
-              break
-            fi
-          done
-
-          if [ "$match" -eq 0 ]; then
-            echo "Comment by '$COMMENT_AUTHOR' is not from a Semgrep bot. Skipping."
+          # Case-insensitive glob match against comment author login.
+          shopt -s nocasematch
+          if [[ "$COMMENT_AUTHOR" != $SEMGREP_BOT_PATTERN ]]; then
+            echo "Comment by '$COMMENT_AUTHOR' does not match pattern '$SEMGREP_BOT_PATTERN'. Skipping."
             exit 0
           fi
 

@@ -21,9 +21,9 @@ Edit the `env:` block at the top of `semgrep-label.yml`:
 | Variable | Default | Purpose |
 |---|---|---|
 | `LABEL_NAME` | `semgrep-findings` | Label applied to the PR. |
-| `SEMGREP_BOT_LOGINS` | `semgrep-app[bot],semgrep-bot,semgrep-cloud` | Comma-separated comment author logins to match. |
+| `SEMGREP_BOT_PATTERN` | `semgrep*` | Case-insensitive glob matched against the comment author's login. |
 
-The Semgrep GitHub App typically posts as `semgrep-app[bot]`. If your setup uses a different account (self-hosted, custom integration), add it to `SEMGREP_BOT_LOGINS`.
+The Semgrep GitHub App posts under accounts like `semgrep-app[bot]` or per-deployment names such as `semgrep-code1-acme[bot]`. The default `semgrep*` glob covers both. To restrict to one account, set `SEMGREP_BOT_PATTERN` to the exact login.
 
 ## Permissions
 
