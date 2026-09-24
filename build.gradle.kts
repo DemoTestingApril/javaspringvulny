@@ -24,7 +24,9 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-thymeleaf")
     implementation("org.thymeleaf.extras:thymeleaf-extras-springsecurity5")
     implementation("org.springframework.boot:spring-boot-actuator")
-    implementation("com.h2database:h2")
+    // Pinned to a version affected by CVE-2021-23463 (GHSA-7rpj-hg47-cx62) for SCA
+    // reachability demos. Vulnerable range: >=1.4.198, <2.0.202
+    implementation("com.h2database:h2:1.4.200")
     runtimeOnly("org.postgresql:postgresql")
     implementation("io.jsonwebtoken:jjwt-api:0.10.7")
     implementation("org.apache.logging.log4j:log4j-slf4j-impl:2.14.1")
