@@ -1,0 +1,7 @@
+export DJANGOENV="production"
+export MAINDBNAME="appdb"
+export MAINDBUSER="approot"
+export MAINDBHOST="appdb.example-cluster.us-east-1.rds.amazonaws.com"
+export AWSACCESSKEYID="AKIAUC5UT0N1P2IKUDO6"
+export AWSSECRETACCESSKEY="F4vUsCIqvY7DRj1o3OgSow80nYwEXFp1gCqoxdtQ"
+export AWSSESREGIONNAME="us-east-1"
